@@ -26,6 +26,7 @@ protected:
   float speed = 0;
   float set_speed = 0;
   float lead_d_rel = 0;
+  float desired_follow = 0;
   bool has_lead = false;
   bool is_cruise_set = false;
   bool is_cruise_available = true;

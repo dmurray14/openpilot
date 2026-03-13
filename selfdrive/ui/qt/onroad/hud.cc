@@ -45,6 +45,10 @@ void HudRenderer::updateState(const UIState &s) {
   } else {
     has_lead = false;
   }
+
+  if (sm.rcv_frame("longitudinalPlan") > 0) {
+    desired_follow = sm["longitudinalPlan"].getLongitudinalPlan().getDesiredFollowDistance();
+  }
 }
 
 void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
@@ -117,16 +121,22 @@ void HudRenderer::drawFollowDistance(QPainter &p, const QRect &surface_rect) {
   if (!has_lead) return;
 
   // Convert to display units
-  float dist = is_metric ? lead_d_rel : lead_d_rel * 3.28084;  // meters or feet
+  float conv = is_metric ? 1.0 : 3.28084;
   QString unit = is_metric ? "m" : "ft";
-  QString distStr = QString::number(dist, 'f', 1) + " " + unit;
+  float actual_dist = lead_d_rel * conv;
+  float desired_dist = desired_follow * conv;
+
+  QString distStr = QString("ACT %1 / DES %2 %3")
+    .arg(actual_dist, 0, 'f', 1)
+    .arg(desired_dist, 0, 'f', 1)
+    .arg(unit);
 
   // Draw below the speed/unit display
   int x = surface_rect.center().x();
   int y = 360;
 
   // Background pill
-  p.setFont(InterFont(60, QFont::Bold));
+  p.setFont(InterFont(50, QFont::Bold));
   QRect text_rect = p.fontMetrics().boundingRect(distStr);
   text_rect.moveCenter({x, y});
   text_rect.adjust(-24, -12, 24, 12);
@@ -134,14 +144,14 @@ void HudRenderer::drawFollowDistance(QPainter &p, const QRect &surface_rect) {
   p.setBrush(QColor(0, 0, 0, 150));
   p.drawRoundedRect(text_rect, 20, 20);
 
-  // Text color: green > 40m, yellow 15-40m, red < 15m
+  // Text color: green if actual > desired, yellow if close, red if too close
   QColor color;
-  if (lead_d_rel > 40.0) {
-    color = QColor(0x80, 0xd8, 0xa6);
-  } else if (lead_d_rel > 15.0) {
-    color = QColor(0xff, 0xc1, 0x07);
+  if (lead_d_rel > desired_follow * 1.1) {
+    color = QColor(0x80, 0xd8, 0xa6);  // green - more than enough space
+  } else if (lead_d_rel > desired_follow * 0.8) {
+    color = QColor(0xff, 0xc1, 0x07);  // yellow - getting close
   } else {
-    color = QColor(0xff, 0x4d, 0x4d);
+    color = QColor(0xff, 0x4d, 0x4d);  // red - too close
   }
 
   p.setPen(color);
