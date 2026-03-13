@@ -79,33 +79,48 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
                                           longi_button_texts);
 
 
-  // Custom follow distance controls
-  auto make_t_follow_control = [this](const QString &param, const QString &title, const QString &defaultVal) -> ButtonControl* {
+  // Custom longitudinal tuning controls
+  auto make_tuning_control = [this](const QString &param, const QString &title, const QString &desc,
+                                     const QString &defaultVal, const QString &unit,
+                                     float minVal, float maxVal, const QString &inputTitle) -> ButtonControl* {
     std::string key = param.toStdString();
     std::string current = params.get(key);
-    QString displayVal = current.empty() ? defaultVal : QString::fromStdString(current) + "s";
+    QString displayVal = current.empty() ? defaultVal : QString::fromStdString(current) + unit;
 
-    auto *ctrl = new ButtonControl(title, displayVal,
-      tr("Set the follow time gap in seconds for this personality. Default: ") + defaultVal);
+    auto *ctrl = new ButtonControl(title, displayVal, desc + tr(" Default: ") + defaultVal + tr(", range: ") +
+      QString::number(minVal) + "-" + QString::number(maxVal));
     QObject::connect(ctrl, &ButtonControl::clicked, [=]() {
       std::string cur = params.get(key);
-      QString currentVal = cur.empty() ? defaultVal.chopped(1) : QString::fromStdString(cur);
-      QString val = InputDialog::getText(tr("Follow Time (seconds)"), this, title, false, -1, currentVal);
+      // Strip the unit suffix from defaultVal to get the bare number
+      QString bareDefault = defaultVal;
+      if (bareDefault.endsWith(unit)) bareDefault.chop(unit.length());
+      QString currentVal = cur.empty() ? bareDefault : QString::fromStdString(cur);
+      QString val = InputDialog::getText(inputTitle, this, title, false, -1, currentVal);
       if (!val.isEmpty()) {
         bool ok;
         float fval = val.toFloat(&ok);
-        if (ok && fval >= 0.1 && fval <= 3.0) {
+        if (ok && fval >= minVal && fval <= maxVal) {
           params.put(key, val.toStdString());
-          ctrl->setText(val + "s");
+          ctrl->setText(val + unit);
         }
       }
     });
     return ctrl;
   };
 
-  t_follow_aggressive = make_t_follow_control("TFollowAggressive", tr("Aggressive Follow Time"), "0.60s");
-  t_follow_standard = make_t_follow_control("TFollowStandard", tr("Standard Follow Time"), "0.85s");
-  t_follow_relaxed = make_t_follow_control("TFollowRelaxed", tr("Relaxed Follow Time"), "1.25s");
+  t_follow_aggressive = make_tuning_control("TFollowAggressive", tr("Aggressive Follow Time"),
+    tr("Follow time gap in seconds."), "0.60s", "s", 0.1, 3.0, tr("Follow Time (seconds)"));
+  t_follow_standard = make_tuning_control("TFollowStandard", tr("Standard Follow Time"),
+    tr("Follow time gap in seconds."), "0.85s", "s", 0.1, 3.0, tr("Follow Time (seconds)"));
+  t_follow_relaxed = make_tuning_control("TFollowRelaxed", tr("Relaxed Follow Time"),
+    tr("Follow time gap in seconds."), "1.25s", "s", 0.1, 3.0, tr("Follow Time (seconds)"));
+
+  comfort_brake_aggressive = make_tuning_control("ComfortBrakeAggressive", tr("Aggressive Comfort Brake"),
+    tr("Assumed deceleration for follow distance (m/s²). Higher = follow closer."), "3.0 m/s²", " m/s²", 1.0, 10.0, tr("Comfort Brake (m/s²)"));
+  comfort_brake_standard = make_tuning_control("ComfortBrakeStandard", tr("Standard Comfort Brake"),
+    tr("Assumed deceleration for follow distance (m/s²). Higher = follow closer."), "3.0 m/s²", " m/s²", 1.0, 10.0, tr("Comfort Brake (m/s²)"));
+  comfort_brake_relaxed = make_tuning_control("ComfortBrakeRelaxed", tr("Relaxed Comfort Brake"),
+    tr("Assumed deceleration for follow distance (m/s²). Higher = follow closer."), "3.0 m/s²", " m/s²", 1.0, 10.0, tr("Comfort Brake (m/s²)"));
 
   std::vector<QString> traffic_sign_button_texts{tr("Off"), tr("+5%"), tr("+10%"), tr("+15%")};
   traffic_sign_setting = new ButtonParamControl("TrafficSignOffset", tr("Traffic Sign Detection"),
@@ -132,6 +147,9 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       addItem(t_follow_aggressive);
       addItem(t_follow_standard);
       addItem(t_follow_relaxed);
+      addItem(comfort_brake_aggressive);
+      addItem(comfort_brake_standard);
+      addItem(comfort_brake_relaxed);
       addItem(traffic_sign_setting);
     }
   }
@@ -193,6 +211,9 @@ void TogglesPanel::updateToggles() {
       t_follow_aggressive->setEnabled(true);
       t_follow_standard->setEnabled(true);
       t_follow_relaxed->setEnabled(true);
+      comfort_brake_aggressive->setEnabled(true);
+      comfort_brake_standard->setEnabled(true);
+      comfort_brake_relaxed->setEnabled(true);
     } else {
       // no long for now
       experimental_mode_toggle->setEnabled(false);
@@ -200,6 +221,9 @@ void TogglesPanel::updateToggles() {
       t_follow_aggressive->setEnabled(false);
       t_follow_standard->setEnabled(false);
       t_follow_relaxed->setEnabled(false);
+      comfort_brake_aggressive->setEnabled(false);
+      comfort_brake_standard->setEnabled(false);
+      comfort_brake_relaxed->setEnabled(false);
       params.remove("ExperimentalMode");
 
       const QString unavailable = tr("Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control.");
