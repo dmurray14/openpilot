@@ -115,13 +115,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   t_follow_relaxed = make_tuning_control("TFollowRelaxed", tr("Relaxed Follow Time"),
     tr("Follow time gap in seconds."), "1.25s", "s", 0.1, 3.0, tr("Follow Time (seconds)"));
 
-  comfort_brake_aggressive = make_tuning_control("ComfortBrakeAggressive", tr("Aggressive Comfort Brake"),
-    tr("Assumed deceleration for follow distance (m/s²). Higher = follow closer."), "3.0 m/s²", " m/s²", 1.0, 10.0, tr("Comfort Brake (m/s²)"));
-  comfort_brake_standard = make_tuning_control("ComfortBrakeStandard", tr("Standard Comfort Brake"),
-    tr("Assumed deceleration for follow distance (m/s²). Higher = follow closer."), "3.0 m/s²", " m/s²", 1.0, 10.0, tr("Comfort Brake (m/s²)"));
-  comfort_brake_relaxed = make_tuning_control("ComfortBrakeRelaxed", tr("Relaxed Comfort Brake"),
-    tr("Assumed deceleration for follow distance (m/s²). Higher = follow closer."), "3.0 m/s²", " m/s²", 1.0, 10.0, tr("Comfort Brake (m/s²)"));
-
   std::vector<QString> traffic_sign_button_texts{tr("Off"), tr("+5%"), tr("+10%"), tr("+15%")};
   traffic_sign_setting = new ButtonParamControl("TrafficSignOffset", tr("Traffic Sign Detection"),
                                     tr("Adjust the traffic sign detection sensitivity. Off will disable the feature, "
@@ -147,9 +140,6 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       addItem(t_follow_aggressive);
       addItem(t_follow_standard);
       addItem(t_follow_relaxed);
-      addItem(comfort_brake_aggressive);
-      addItem(comfort_brake_standard);
-      addItem(comfort_brake_relaxed);
       addItem(traffic_sign_setting);
     }
   }
@@ -207,9 +197,6 @@ void TogglesPanel::updateToggles() {
     t_follow_aggressive->setEnabled(true);
     t_follow_standard->setEnabled(true);
     t_follow_relaxed->setEnabled(true);
-    comfort_brake_aggressive->setEnabled(true);
-    comfort_brake_standard->setEnabled(true);
-    comfort_brake_relaxed->setEnabled(true);
 
     if (hasLongitudinalControl(CP)) {
       // normal description and toggle
@@ -243,9 +230,6 @@ void TogglesPanel::updateToggles() {
     t_follow_aggressive->setEnabled(true);
     t_follow_standard->setEnabled(true);
     t_follow_relaxed->setEnabled(true);
-    comfort_brake_aggressive->setEnabled(true);
-    comfort_brake_standard->setEnabled(true);
-    comfort_brake_relaxed->setEnabled(true);
   }
 }
 

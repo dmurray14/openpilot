@@ -89,9 +89,6 @@ protected:
   ButtonControl *t_follow_aggressive;
   ButtonControl *t_follow_standard;
   ButtonControl *t_follow_relaxed;
-  ButtonControl *comfort_brake_aggressive;
-  ButtonControl *comfort_brake_standard;
-  ButtonControl *comfort_brake_relaxed;
 
   virtual void updateToggles();
 };

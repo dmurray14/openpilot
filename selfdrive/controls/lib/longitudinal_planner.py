@@ -9,7 +9,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
-from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc, desired_follow_distance, get_T_FOLLOW, get_COMFORT_BRAKE
+from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc, desired_follow_distance, get_T_FOLLOW
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_speed_error
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
@@ -217,10 +217,8 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     lead = sm['radarState'].leadOne
     if lead.status:
       v_ego = sm['carState'].vEgo
-      personality = sm['selfdriveState'].personality
-      t_follow = get_T_FOLLOW(personality)
-      comfort_brake = get_COMFORT_BRAKE(personality)
-      longitudinalPlan.desiredFollowDistance = float(desired_follow_distance(v_ego, lead.vLead, t_follow, comfort_brake))
+      t_follow = get_T_FOLLOW(sm['selfdriveState'].personality)
+      longitudinalPlan.desiredFollowDistance = float(desired_follow_distance(v_ego, lead.vLead, t_follow))
 
     pm.send('longitudinalPlan', plan_send)
 
