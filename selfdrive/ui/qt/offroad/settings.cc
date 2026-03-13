@@ -203,27 +203,23 @@ void TogglesPanel::updateToggles() {
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
+    // Tuning controls are always available
+    t_follow_aggressive->setEnabled(true);
+    t_follow_standard->setEnabled(true);
+    t_follow_relaxed->setEnabled(true);
+    comfort_brake_aggressive->setEnabled(true);
+    comfort_brake_standard->setEnabled(true);
+    comfort_brake_relaxed->setEnabled(true);
+
     if (hasLongitudinalControl(CP)) {
       // normal description and toggle
       experimental_mode_toggle->setEnabled(true);
       experimental_mode_toggle->setDescription(e2e_description);
       long_personality_setting->setEnabled(true);
-      t_follow_aggressive->setEnabled(true);
-      t_follow_standard->setEnabled(true);
-      t_follow_relaxed->setEnabled(true);
-      comfort_brake_aggressive->setEnabled(true);
-      comfort_brake_standard->setEnabled(true);
-      comfort_brake_relaxed->setEnabled(true);
     } else {
       // no long for now
       experimental_mode_toggle->setEnabled(false);
       long_personality_setting->setEnabled(false);
-      t_follow_aggressive->setEnabled(false);
-      t_follow_standard->setEnabled(false);
-      t_follow_relaxed->setEnabled(false);
-      comfort_brake_aggressive->setEnabled(false);
-      comfort_brake_standard->setEnabled(false);
-      comfort_brake_relaxed->setEnabled(false);
       params.remove("ExperimentalMode");
 
       const QString unavailable = tr("Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control.");
@@ -243,6 +239,13 @@ void TogglesPanel::updateToggles() {
     experimental_mode_toggle->refresh();
   } else {
     experimental_mode_toggle->setDescription(e2e_description);
+    // No car params yet, still enable tuning controls
+    t_follow_aggressive->setEnabled(true);
+    t_follow_standard->setEnabled(true);
+    t_follow_relaxed->setEnabled(true);
+    comfort_brake_aggressive->setEnabled(true);
+    comfort_brake_standard->setEnabled(true);
+    comfort_brake_relaxed->setEnabled(true);
   }
 }
 
