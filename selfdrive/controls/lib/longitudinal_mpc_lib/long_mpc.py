@@ -69,15 +69,47 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
     raise NotImplementedError("Longitudinal personality not supported")
 
 
+_t_follow_params = None
+_t_follow_cache = {}
+_t_follow_last_read = 0.0
+
+def _read_t_follow_params():
+  global _t_follow_params, _t_follow_cache, _t_follow_last_read
+  now = time.monotonic()
+  if now - _t_follow_last_read < 1.0:  # cache for 1 second
+    return
+  if _t_follow_params is None:
+    from openpilot.common.params import Params
+    _t_follow_params = Params()
+  _t_follow_last_read = now
+  _t_follow_cache = {}
+  for key, default in [("TFollowAggressive", 0.60), ("TFollowStandard", 0.85), ("TFollowRelaxed", 1.25)]:
+    try:
+      val = _t_follow_params.get(key)
+      if val is not None:
+        _t_follow_cache[key] = max(0.1, float(val))
+      else:
+        _t_follow_cache[key] = default
+    except (ValueError, TypeError):
+      _t_follow_cache[key] = default
+
+T_FOLLOW_DEFAULTS = {
+  log.LongitudinalPersonality.relaxed: 1.25,
+  log.LongitudinalPersonality.standard: 0.85,
+  log.LongitudinalPersonality.aggressive: 0.60,
+}
+
+T_FOLLOW_PARAM_KEYS = {
+  log.LongitudinalPersonality.relaxed: "TFollowRelaxed",
+  log.LongitudinalPersonality.standard: "TFollowStandard",
+  log.LongitudinalPersonality.aggressive: "TFollowAggressive",
+}
+
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
-  if personality==log.LongitudinalPersonality.relaxed:
-    return 1.25
-  elif personality==log.LongitudinalPersonality.standard:
-    return 0.85
-  elif personality==log.LongitudinalPersonality.aggressive:
-    return 0.60
-  else:
+  if personality not in T_FOLLOW_DEFAULTS:
     raise NotImplementedError("Longitudinal personality not supported")
+  _read_t_follow_params()
+  return _t_follow_cache.get(T_FOLLOW_PARAM_KEYS[personality], T_FOLLOW_DEFAULTS[personality])
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
