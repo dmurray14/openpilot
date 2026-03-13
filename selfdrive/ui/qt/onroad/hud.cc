@@ -36,6 +36,15 @@ void HudRenderer::updateState(const UIState &s) {
   v_ego_cluster_seen = v_ego_cluster_seen || car_state.getVEgoCluster() != 0.0;
   float v_ego = v_ego_cluster_seen ? car_state.getVEgoCluster() : car_state.getVEgo();
   speed = std::max<float>(0.0f, v_ego * (is_metric ? MS_TO_KPH : MS_TO_MPH));
+
+  // Lead car follow distance
+  if (sm.rcv_frame("radarState") > 0) {
+    const auto &lead = sm["radarState"].getRadarState().getLeadOne();
+    has_lead = lead.getStatus();
+    lead_d_rel = lead.getDRel();
+  } else {
+    has_lead = false;
+  }
 }
 
 void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
@@ -52,6 +61,7 @@ void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
     drawSetSpeed(p, surface_rect);
   }
   drawCurrentSpeed(p, surface_rect);
+  drawFollowDistance(p, surface_rect);
 
   p.restore();
 }
@@ -101,6 +111,41 @@ void HudRenderer::drawCurrentSpeed(QPainter &p, const QRect &surface_rect) {
 
   p.setFont(InterFont(66));
   drawText(p, surface_rect.center().x(), 290, is_metric ? tr("km/h") : tr("mph"), 200);
+}
+
+void HudRenderer::drawFollowDistance(QPainter &p, const QRect &surface_rect) {
+  if (!has_lead) return;
+
+  // Convert to display units
+  float dist = is_metric ? lead_d_rel : lead_d_rel * 3.28084;  // meters or feet
+  QString unit = is_metric ? "m" : "ft";
+  QString distStr = QString::number(dist, 'f', 1) + " " + unit;
+
+  // Draw below the speed/unit display
+  int x = surface_rect.center().x();
+  int y = 360;
+
+  // Background pill
+  p.setFont(InterFont(60, QFont::Bold));
+  QRect text_rect = p.fontMetrics().boundingRect(distStr);
+  text_rect.moveCenter({x, y});
+  text_rect.adjust(-24, -12, 24, 12);
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(0, 0, 0, 150));
+  p.drawRoundedRect(text_rect, 20, 20);
+
+  // Text color: green > 40m, yellow 15-40m, red < 15m
+  QColor color;
+  if (lead_d_rel > 40.0) {
+    color = QColor(0x80, 0xd8, 0xa6);
+  } else if (lead_d_rel > 15.0) {
+    color = QColor(0xff, 0xc1, 0x07);
+  } else {
+    color = QColor(0xff, 0x4d, 0x4d);
+  }
+
+  p.setPen(color);
+  p.drawText(text_rect, Qt::AlignCenter, distStr);
 }
 
 void HudRenderer::drawText(QPainter &p, int x, int y, const QString &text, int alpha) {
