@@ -86,9 +86,6 @@ protected:
   std::map<std::string, ParamControl*> toggles;
   ButtonParamControl *long_personality_setting;
   ButtonParamControl *traffic_sign_setting;  // Added traffic sign setting
-  ButtonControl *t_follow_aggressive;
-  ButtonControl *t_follow_standard;
-  ButtonControl *t_follow_relaxed;
 
   virtual void updateToggles();
 };

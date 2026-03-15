@@ -53,7 +53,7 @@ T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1
 T_IDXS = np.array(T_IDXS_LST)
 FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
-COMFORT_BRAKE = 5.0
+COMFORT_BRAKE = 3.0
 STOP_DISTANCE = 3.0
 CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.8
@@ -69,47 +69,15 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
     raise NotImplementedError("Longitudinal personality not supported")
 
 
-_custom_params = None
-_custom_cache = {}
-_custom_last_read = 0.0
-
-def _read_custom_params():
-  global _custom_params, _custom_cache, _custom_last_read
-  now = time.monotonic()
-  if now - _custom_last_read < 1.0:  # cache for 1 second
-    return
-  if _custom_params is None:
-    from openpilot.common.params import Params
-    _custom_params = Params()
-  _custom_last_read = now
-  _custom_cache = {}
-  for key, default in [("TFollowAggressive", 0.60), ("TFollowStandard", 0.85), ("TFollowRelaxed", 1.25)]:
-    try:
-      val = _custom_params.get(key)
-      if val is not None:
-        _custom_cache[key] = max(0.1, float(val))
-      else:
-        _custom_cache[key] = default
-    except (ValueError, TypeError):
-      _custom_cache[key] = default
-
-T_FOLLOW_DEFAULTS = {
-  log.LongitudinalPersonality.relaxed: 1.25,
-  log.LongitudinalPersonality.standard: 0.85,
-  log.LongitudinalPersonality.aggressive: 0.60,
-}
-
-T_FOLLOW_PARAM_KEYS = {
-  log.LongitudinalPersonality.relaxed: "TFollowRelaxed",
-  log.LongitudinalPersonality.standard: "TFollowStandard",
-  log.LongitudinalPersonality.aggressive: "TFollowAggressive",
-}
-
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
-  if personality not in T_FOLLOW_DEFAULTS:
+  if personality==log.LongitudinalPersonality.relaxed:
+    return 1.25
+  elif personality==log.LongitudinalPersonality.standard:
+    return 0.85
+  elif personality==log.LongitudinalPersonality.aggressive:
+    return 0.60
+  else:
     raise NotImplementedError("Longitudinal personality not supported")
-  _read_custom_params()
-  return _custom_cache.get(T_FOLLOW_PARAM_KEYS[personality], T_FOLLOW_DEFAULTS[personality])
 
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
@@ -186,6 +154,7 @@ def gen_long_ocp():
   prev_a = ocp.model.p[3]
   lead_t_follow = ocp.model.p[4]
   lead_danger_factor = ocp.model.p[5]
+
   ocp.cost.yref = np.zeros((COST_DIM, ))
   ocp.cost.yref_e = np.zeros((COST_E_DIM, ))
 
